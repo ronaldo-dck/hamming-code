@@ -3,6 +3,10 @@
 #include <string.h>
 #include <math.h>
 
+/* As funções estão com muitas atribuições
+    São muitas sub rotinas, cada uma deve receber a sua propria função */
+
+
 void byte2bits(int numBytes, char *byte, int *bits)
 {
     for (int i = 0, j = numBytes - 1; j >= 0; i++)
@@ -75,16 +79,17 @@ void extractHam(int *ham, int* bits, int SIZE_HAM)
 void readHam(char* binInput)
 {
     FILE *arqHamming, *arq;
-    char *ponto, out[100] = "out_";
+    char *ponto, out[100] = "out_"; 
     strcat(out, binInput);
     ponto = strrchr(out, '.');
-    memset(ponto, '\0', 1);
+    memset(ponto, '\0', 1); 
     arqHamming = fopen(binInput, "rb");
     arq = fopen(out, "wb");
 
     int SIZE_IN = atoi(&ponto[5]);
-    unsigned numBytes = SIZE_IN / 8;
     int bits[SIZE_IN];
+    
+    unsigned numBytes = SIZE_IN / 8;
     char byte[numBytes];
 
     while (fread(byte, sizeof(char), numBytes, arqHamming))
@@ -122,6 +127,8 @@ void readHam(char* binInput)
             printf("Alterando bit no indice %d\n", sindrome);
         }
 
+        // acho que entendi mas aqui o codigo fico bem confuso
+        // novamente refatorar e transformemos essas sub rotinas em funções
         ham[0] = 0;
         for (int i = 1; i < SIZE_IN; i++)
             ham[0] = ham[0] ^ ham[i];
