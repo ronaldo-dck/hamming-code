@@ -19,7 +19,7 @@ void byte2bits(int numBytes, char *byte, int *bits)
 
 void writeFile(int outTimes, int *ham, FILE *arqHamming)
 {
-    for (int row = 0, i = (8 * outTimes) - 8; row < outTimes; row++)
+    for (int word = 0, i = (8 * outTimes) - 8; word < outTimes; word++)
     {
         u_int8_t output = 0;
         for (int j = 7; j >= 0; j--)
@@ -28,10 +28,12 @@ void writeFile(int outTimes, int *ham, FILE *arqHamming)
         fwrite(&output, sizeof(u_int8_t), 1, arqHamming);
     }
 }
+
 void writeHam(char* binInput, int SIZE_IN)
 {
-    int SIZE_HAM = 1 + SIZE_IN + (int)ceil(log2(SIZE_IN + 1));
-    int SIZE_PAD = 8 - (SIZE_HAM % 8);
+    int SIZE_HAM = 1 + SIZE_IN + (int)ceil(log2(SIZE_IN + 1)); 
+    int SIZE_PAD = (SIZE_HAM%8)? (8 - (SIZE_HAM % 8)): 0;
+    
     FILE *arq, *arqHamming;
     arq = fopen(binInput, "rb");
     sprintf(binInput, "%s.wham%d", binInput, (SIZE_HAM + SIZE_PAD));
@@ -50,12 +52,9 @@ void writeHam(char* binInput, int SIZE_IN)
                 ham[i] = bits[j++];
 
         for (int i = 1; i <= SIZE_IN; i = i << 1)
-        {
-            ham[i] = 0; // A memset já não ta fazendo esse trabalho, por que replicar ele aqui
             for (int j = 3; j < SIZE_HAM; j++)
                 if (i & j)
                     ham[i] = ham[i] ^ ham[j];
-        }
 
         for (int i = 1; i < SIZE_HAM; i++)
             ham[0] = ham[0] ^ ham[i];
@@ -67,6 +66,14 @@ void writeHam(char* binInput, int SIZE_IN)
 
     fclose(arq);
     fclose(arqHamming);
+}
+
+void extractHam(int *ham, int* bits, int SIZE_HAM)
+{
+    memset(bits, 0, sizeof(int) * SIZE_HAM-8);
+    for (int i = 0, j = 0; i < SIZE_HAM; i++)
+        if (i & (i - 1))
+            bits[j++] = ham[i];
 }
 
 void readHam(char* binInput)
@@ -90,13 +97,17 @@ void readHam(char* binInput)
     while (fread(byte, sizeof(char), numBytes, arqHamming))
     {
         byte2bits(numBytes, byte, bits);
-        /* for (int i = SIZE_IN-1; i >= 0; i--)
-            printf("%d ", bits[i]);
-        printf("\n"); */
 
         int ham[SIZE_IN];
         for (int i = 0; i < SIZE_IN; i++)
             ham[i] = bits[i];
+            
+        for (int i = SIZE_IN-1; i >= 0; i--)
+            printf("%d ", bits[i]);
+        printf("\n");
+        for (int i = SIZE_IN-1; i >= 0; i--)
+            printf("%d ", ham[i]);
+        printf("\n");
 
         u_int8_t sindrome = 0;
         for (int i = 1; i < SIZE_IN; i = i << 1)
@@ -113,6 +124,7 @@ void readHam(char* binInput)
 
         if(sindrome && sindrome <= SIZE_IN)
         {
+            bits[sindrome] = abs(bits[sindrome] - 1);
             ham[sindrome] = abs(ham[sindrome] - 1);
             printf("Alterando bit no indice %d\n", sindrome);
         }
@@ -122,13 +134,18 @@ void readHam(char* binInput)
         ham[0] = 0;
         for (int i = 1; i < SIZE_IN; i++)
             ham[0] = ham[0] ^ ham[i];
-        if(ham[0])
+        if(ham[0] ^ bits[0])
             printf("Palavra Rejeitada\n");
         else
-        {
             printf("Palavra Aceita!\n");
-            writeFile(numBytes, ham, arq);
-        }
+
+        int bitsOut[SIZE_IN - 8];
+        extractHam(bits, bitsOut, SIZE_IN);
+        for (int i = SIZE_IN-9; i >= 0; i--)
+            printf("%d ", bitsOut[i]);
+        printf("<-bitsOut\n");
+
+        writeFile(numBytes - 1, bitsOut, arq);
     }
     fclose(arqHamming);
     fclose(arq);
@@ -146,9 +163,7 @@ int main(int argc, char const *argv[4])
         writeHam(binInput, SIZE_IN);
     }
     else if(mode[1] == 'r')
-    {
         readHam(binInput);
-    }
     else
         printf("Modo invalido\n");
     return 0;
