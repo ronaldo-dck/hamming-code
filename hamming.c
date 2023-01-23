@@ -72,10 +72,12 @@ void writeHam(char* binInput, int SIZE_IN)
 void readHam(char* binInput)
 {
     FILE *arqHamming, *arq;
+    
     char *ponto, out[100] = "out_"; 
     strcat(out, binInput);
     ponto = strrchr(out, '.');
     memset(ponto, '\0', 1); 
+
     arqHamming = fopen(binInput, "rb");
     arq = fopen(out, "wb");
 
