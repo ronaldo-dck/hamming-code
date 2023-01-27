@@ -1,5 +1,6 @@
 # hamming-code
 Github: @satorike @marlonfpereira
+
 Para escrita hamming, insira o nome do arquivo, o modo '-w' seguido pelo tamanho da palavra a ser protegida: 8, 16, 32 ou 64;
 ex. ./hamming arquivo.txt -w 26
 
